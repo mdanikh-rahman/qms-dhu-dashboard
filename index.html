@@ -24,7 +24,7 @@
 
 <div class="min-h-screen flex flex-col lg:flex-row">
   
-  <!-- Left Sidebar (1st Image Style) -->
+  <!-- Left Sidebar -->
   <aside class="teal-sidebar text-white w-full lg:w-64 flex-shrink-0 flex flex-col justify-between">
     <div>
       <div class="p-6 flex items-center justify-between lg:justify-start gap-3 border-b border-teal-800/60">
@@ -87,7 +87,7 @@
       </div>
     </header>
 
-    <!-- Executive Filter Panel (2nd Image Feature) -->
+    <!-- Executive Filter Panel -->
     <section class="bg-white rounded-xl p-4 md:p-5 card-shadow mb-6 border-t-4 border-teal-600">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-xs font-bold uppercase tracking-wider text-teal-800 flex items-center gap-1.5">
@@ -119,22 +119,16 @@
 
     <!-- TAB 1: DASHBOARD VIEW -->
     <div id="tab-dashboard" class="space-y-6">
-      
-      <!-- 3-Column Bento Grid (Inspired by 1st Image Layout + 2nd Image KPIs) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Left Column: Recent Line Inspection Logs -->
         <div class="lg:col-span-4 space-y-3">
           <div class="flex items-center justify-between">
             <h3 class="text-xs font-bold uppercase tracking-wider text-teal-700">Recent Line Logs</h3>
             <span class="text-[11px] text-slate-400">Latest Entries</span>
           </div>
-          <div id="recent-logs-container" class="space-y-3">
-            <!-- Populated dynamically -->
-          </div>
+          <div id="recent-logs-container" class="space-y-3"></div>
         </div>
 
-        <!-- Center Column: KPI Cards + Big Teal Donut Chart -->
         <div class="lg:col-span-4 bg-white rounded-xl p-5 card-shadow flex flex-col justify-between">
           <div class="grid grid-cols-2 gap-3 mb-4">
             <div class="bg-slate-50 p-3 rounded-lg border-l-4 border-emerald-500">
@@ -165,16 +159,13 @@
           </div>
         </div>
 
-        <!-- Right Column: Top Defect Frequency Bars + Bottom Mini Cards -->
         <div class="lg:col-span-4 flex flex-col justify-between space-y-4">
           <div class="bg-white rounded-xl p-5 card-shadow flex-1">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-xs font-bold uppercase tracking-wider text-teal-700">Top Defect Frequency</h3>
               <span class="text-[10px] bg-cyan-50 text-cyan-700 font-bold px-2 py-0.5 rounded">TOP ISSUES</span>
             </div>
-            <div id="defect-bars-container" class="space-y-3.5">
-              <!-- Populated dynamically -->
-            </div>
+            <div id="defect-bars-container" class="space-y-3.5"></div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -190,10 +181,8 @@
             </div>
           </div>
         </div>
-
       </div>
 
-      <!-- Bottom Full-Width Line Chart (1st Image Style) -->
       <section class="bg-white rounded-xl p-5 card-shadow">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div>
@@ -201,19 +190,14 @@
             <p class="text-[11px] text-slate-400">Comparing Defect Per Hundred Units (DHU%) across production lines</p>
           </div>
           <div class="flex items-center gap-2">
-            <button onclick="exportCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition">
-              Export CSV
-            </button>
-            <button onclick="switchTab('entries', document.querySelectorAll('.nav-btn')[1])" class="bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition">
-              View All Data
-            </button>
+            <button onclick="exportCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition">Export CSV</button>
+            <button onclick="switchTab('entries', document.querySelectorAll('.nav-btn')[1])" class="bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition">View All Data</button>
           </div>
         </div>
         <div class="h-64 w-full">
           <canvas id="lineDhuChart"></canvas>
         </div>
       </section>
-
     </div>
 
     <!-- TAB 2: DAILY ENTRIES TABLE -->
@@ -237,8 +221,7 @@
               <th class="p-3 rounded-tr-lg">Process</th>
             </tr>
           </thead>
-          <tbody id="entries-table-body" class="divide-y divide-slate-100">
-          </tbody>
+          <tbody id="entries-table-body" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
     </div>
@@ -256,7 +239,7 @@
     <div id="tab-settings" class="hidden bg-white rounded-xl p-6 card-shadow max-w-2xl">
       <h3 class="text-base font-bold text-teal-800 mb-2">Connect Your Live Google Sheet</h3>
       <p class="text-xs text-slate-600 leading-relaxed mb-4">
-        আপনার Google Sheet থেকে অটোমেটিক ডেটা লোড করতে <b>File &gt; Share &gt; Publish to web</b> থেকে <b>CSV</b> লিংকটি কপি করে নিচে দিন অথবা সরাসরি <code>index.html</code> কোডের <code>GOOGLE_SHEET_CSV_URL</code> ভেরিয়েবলে বসিয়ে দিন।
+        আপনার Google Sheet থেকে অটোমেটিক ডেটা লোড করতে <b>File &gt; Share &gt; Publish to web</b> থেকে <b>CSV</b> লিংকটি কপি করে নিচে পেস্ট করুন।
       </p>
       <div class="space-y-3">
         <input id="custom-sheet-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:border-teal-600" />
@@ -272,21 +255,15 @@
 
 <script>
   // =========================================================================
-  // এখানে আপনার Google Sheet-এর Publish করা CSV লিংকটি পেস্ট করুন:
+  // আপনার Google Sheet-এর Publish করা CSV লিংকটি এখানে সরাসরি বসিয়ে দিতে পারেন:
   // =========================================================================
-  const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPp0eVFG2uM2fPbRep9186y5r2JIykxrAuRM5NHEkVYr3dstQ3lgmaOZNP8DDFHOAZ1kmdBXk6Q7j-/pub?gid=0&single=true&output=csv
-";
+  const GOOGLE_SHEET_CSV_URL = "";
 
-  // স্যাম্পল ডেটা (লিংক না দেওয়া পর্যন্ত আপনার শিটের ফরম্যাটে ডেটা দেখাবে)
   const FALLBACK_DATA = [
     { Date: "2026-11-08", Line: "1A", Buyer: "WALMART", Style: "GRS78015B", Color: "VIVID WHITE", "Check Qty": 1200, Defects: 49, "TOP-1": "PUCKERING", "PROCESS 1": "BOTTOM", "TOP-2": "UN-CUT THREAD", "TOP-3": "BAD TENSION", "DHU%": "4.08%", "QC ID": "QC01" },
     { Date: "2026-11-08", Line: "1B", Buyer: "WALMART", Style: "AWS78060B", Color: "BLACK", "Check Qty": 929, Defects: 54, "TOP-1": "UP DOWN", "PROCESS 1": "IN SEAM", "TOP-2": "PUCKERING", "TOP-3": "BROKEN STITCH", "DHU%": "5.81%", "QC ID": "QC01" },
     { Date: "2026-11-08", Line: "2", Buyer: "NEXT", Style: "927012", Color: "KHAKI", "Check Qty": 220, Defects: 12, "TOP-1": "PUCKERING", "PROCESS 1": "HOOD", "TOP-2": "PLEAT", "TOP-3": "BROKEN STITCH", "DHU%": "5.45%", "QC ID": "QC02" },
-    { Date: "2026-11-08", Line: "3", Buyer: "WALMART", Style: "AWS70564PD", Color: "BROWN", "Check Qty": 425, Defects: 23, "TOP-1": "MISSING", "PROCESS 1": "BARTACK", "TOP-2": "NDL MARK", "TOP-3": "OPEN SEAM", "DHU%": "5.41%", "QC ID": "QC03" },
-    { Date: "2026-11-08", Line: "4", Buyer: "MEIJER", Style: "49939", Color: "METEORITE", "Check Qty": 950, Defects: 20, "TOP-1": "SKIP STITCH", "PROCESS 1": "IN SEAM", "TOP-2": "PUCKERING", "TOP-3": "BARTACK MISSING", "DHU%": "2.11%", "QC ID": "QC04" },
-    { Date: "2026-11-08", Line: "5", Buyer: "NEXT", Style: "PUDDLE SUIT", Color: "NATURAL", "Check Qty": 650, Defects: 23, "TOP-1": "SHORT STITCH", "PROCESS 1": "ZIPPER JOINT", "TOP-2": "PUCKERING", "TOP-3": "OPEN SEAM", "DHU%": "3.54%", "QC ID": "QC05" },
-    { Date: "2026-11-08", Line: "6", Buyer: "ALPINE PRO", Style: "LJCH6AE", Color: "BLUE", "Check Qty": 120, Defects: 7, "TOP-1": "PUCKERING", "PROCESS 1": "HOOD", "TOP-2": "PLEAT", "TOP-3": "UN EVEN", "DHU%": "5.83%", "QC ID": "QC06" },
-    { Date: "2026-11-08", Line: "7", Buyer: "NEXT", Style: "D363369", Color: "COLOR BLOCK", "Check Qty": 480, Defects: 16, "TOP-1": "DOWN STITCH", "PROCESS 1": "LOOP", "TOP-2": "UN EVEN", "TOP-3": "BROKEN STITCH", "DHU%": "3.33%", "QC ID": "QC07" }
+    { Date: "2026-11-08", Line: "3", Buyer: "WALMART", Style: "AWS70564PD", Color: "BROWN", "Check Qty": 425, Defects: 23, "TOP-1": "MISSING", "PROCESS 1": "BARTACK", "TOP-2": "NDL MARK", "TOP-3": "OPEN SEAM", "DHU%": "5.41%", "QC ID": "QC03" }
   ];
 
   let rawData = [];
@@ -305,6 +282,7 @@
       localStorage.setItem("qms_sheet_csv_url", val);
       loadData(true);
       switchTab('dashboard', document.querySelectorAll('.nav-btn')[0]);
+      alert("Google Sheet URL saved successfully!");
     }
   }
 
@@ -312,11 +290,15 @@
     localStorage.removeItem("qms_sheet_csv_url");
     document.getElementById("custom-sheet-url").value = "";
     loadData(true);
+    alert("Switched back to demo data.");
   }
 
   function loadData(forceRefresh = false) {
     const csvUrl = getActiveCsvUrl();
     document.getElementById("current-date-display").innerText = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
+    
+    const savedUrl = localStorage.getItem("qms_sheet_csv_url");
+    if (savedUrl) document.getElementById("custom-sheet-url").value = savedUrl;
 
     if (!csvUrl) {
       document.getElementById("sync-badge").innerText = "DEMO DATA";
@@ -428,7 +410,6 @@
     const passRate = totalChecked > 0 ? Math.max(0, 100 - avgDhu) : 0;
     const activeLines = new Set(filteredData.map(d => d.line)).size;
 
-    // KPIs
     document.getElementById("kpi-inspected").innerText = totalChecked.toLocaleString();
     document.getElementById("kpi-dhu").innerText = avgDhu.toFixed(2) + "%";
     document.getElementById("kpi-pass-rate").innerText = passRate.toFixed(1) + "%";
@@ -445,7 +426,6 @@
       dhuStatusEl.className = "text-[10px] text-rose-600 font-bold mt-0.5";
     }
 
-    // Recent Logs (Left Column - 1st Pic Style)
     const logsContainer = document.getElementById("recent-logs-container");
     logsContainer.innerHTML = "";
     filteredData.slice(0, 4).forEach(row => {
@@ -467,7 +447,6 @@
       `;
     });
 
-    // Top Defect Frequency Progress Bars (Right Column - 1st Pic Style)
     const defectCounts = {};
     filteredData.forEach(r => {
       [r.top1, r.top2, r.top3].forEach(def => {
@@ -497,7 +476,6 @@
       `;
     });
 
-    // Update Donut Chart
     if (donutChart) donutChart.destroy();
     donutChart = new Chart(document.getElementById("passRateDonut"), {
       type: "doughnut",
@@ -518,7 +496,6 @@
       }
     });
 
-    // Update Bottom Line Chart (Line-wise DHU%)
     const lineMap = {};
     filteredData.forEach(r => {
       if (!lineMap[r.line]) lineMap[r.line] = { checked: 0, defects: 0 };
@@ -556,7 +533,6 @@
       }
     });
 
-    // Update Pareto Chart
     if (paretoChart) paretoChart.destroy();
     paretoChart = new Chart(document.getElementById("paretoBarChart"), {
       type: "bar",
@@ -576,7 +552,6 @@
       }
     });
 
-    // Update Entries Table
     document.getElementById("table-count").innerText = filteredData.length + " Records";
     const tbody = document.getElementById("entries-table-body");
     tbody.innerHTML = filteredData.map(r => `
@@ -596,14 +571,18 @@
 
   function switchTab(tabName, btnEl) {
     ["dashboard", "entries", "defects", "settings"].forEach(t => {
-      document.getElementById("tab-" + t).classList.add("hidden");
+      const el = document.getElementById("tab-" + t);
+      if (el) el.classList.add("hidden");
     });
-    document.getElementById("tab-" + tabName).classList.remove("hidden");
+    
+    const target = document.getElementById("tab-" + tabName);
+    if (target) target.classList.remove("hidden");
 
     document.querySelectorAll(".nav-btn").forEach(b => {
       b.classList.remove("teal-active", "text-white");
       b.classList.add("text-teal-100/80");
     });
+    
     if (btnEl) {
       btnEl.classList.add("teal-active", "text-white");
       btnEl.classList.remove("text-teal-100/80");
@@ -623,7 +602,6 @@
     link.click();
   }
 
-  // Initial load & auto-refresh every 60 seconds
   loadData();
   setInterval(() => loadData(true), 60000);
 </script>
