@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QMS & DHU Analytics Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f0f5f7; }
+    .teal-sidebar { background: linear-gradient(180deg, #005b66 0%, #00434c 100%); }
+    .teal-active { background-color: #007b8a; border-left: 4px solid #22d3ee; }
+    .card-shadow { box-shadow: 0 4px 20px rgba(0, 91, 102, 0.06); }
+    .pulse-dot { animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.25); }
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+<div class="min-h-screen flex flex-col lg:flex-row">
+  
+  <!-- Left Sidebar (1st Image Style) -->
+  <aside class="teal-sidebar text-white w-full lg:w-64 flex-shrink-0 flex flex-col justify-between">
+    <div>
+      <div class="p-6 flex items-center justify-between lg:justify-start gap-3 border-b border-teal-800/60">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-cyan-400/20 border border-cyan-300/40 flex items-center justify-center text-cyan-300 font-bold text-lg">
+            Q
+          </div>
+          <div>
+            <h1 class="font-bold tracking-wider text-sm uppercase">QMS & DHU HUB</h1>
+            <p class="text-[11px] text-cyan-200/80">Garment Quality System</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="lg:hidden text-cyan-200 border border-cyan-500/40 px-2.5 py-1 rounded text-xs">Menu</button>
+      </div>
+
+      <nav id="sidebar-nav" class="hidden lg:block py-4 space-y-1 text-xs font-semibold tracking-wider uppercase">
+        <button onclick="switchTab('dashboard', this)" class="nav-btn teal-active w-full text-left px-6 py-3.5 flex items-center gap-3 transition">
+          <span>📊</span> DASHBOARD
+        </button>
+        <button onclick="switchTab('entries', this)" class="nav-btn w-full text-left px-6 py-3.5 text-teal-100/80 hover:bg-teal-800/50 flex items-center gap-3 transition">
+          <span>📋</span> DAILY ENTRIES
+        </button>
+        <button onclick="switchTab('defects', this)" class="nav-btn w-full text-left px-6 py-3.5 text-teal-100/80 hover:bg-teal-800/50 flex items-center gap-3 transition">
+          <span>⚠️</span> DEFECT PARETO
+        </button>
+        <button onclick="switchTab('settings', this)" class="nav-btn w-full text-left px-6 py-3.5 text-teal-100/80 hover:bg-teal-800/50 flex items-center gap-3 transition">
+          <span>⚙️</span> SHEET SYNC SETUP
+        </button>
+      </nav>
+    </div>
+
+    <div class="hidden lg:block p-5 border-t border-teal-800/60">
+      <div class="bg-teal-950/50 rounded-lg p-3 flex items-center justify-between text-xs">
+        <span class="text-teal-200 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+          LIVE SHEET SYNC
+        </span>
+        <span id="sync-badge" class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">ACTIVE</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 p-4 md:p-7 overflow-y-auto">
+    
+    <!-- Top Header -->
+    <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-xl md:text-2xl font-extrabold text-slate-800 tracking-tight">DAILY QMS & DHU SUMMARY</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Auto-Synced Production & Finishing Quality Analytics</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="loadData(true)" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+          <span>↻</span> Refresh Data
+        </button>
+        <div class="flex items-center gap-2 bg-white px-3.5 py-2 rounded-lg card-shadow text-xs font-semibold text-slate-600">
+          <span class="w-3 h-3 rounded-full bg-cyan-500 inline-block"></span>
+          <span id="current-date-display">LOADING DATE...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Executive Filter Panel (2nd Image Feature) -->
+    <section class="bg-white rounded-xl p-4 md:p-5 card-shadow mb-6 border-t-4 border-teal-600">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-teal-800 flex items-center gap-1.5">
+          <span>🔻</span> Executive Filter Panel
+        </h3>
+        <button onclick="resetFilters()" class="text-xs text-teal-600 hover:text-teal-800 font-semibold underline">Reset Filters</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Production Line</label>
+          <select id="filter-line" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:border-teal-600">
+            <option value="ALL">All Lines</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Buyer / Brand</label>
+          <select id="filter-buyer" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:border-teal-600">
+            <option value="ALL">All Buyers</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Inspection Date</label>
+          <select id="filter-date" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:border-teal-600">
+            <option value="ALL">All Dates</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 1: DASHBOARD VIEW -->
+    <div id="tab-dashboard" class="space-y-6">
+      
+      <!-- 3-Column Bento Grid (Inspired by 1st Image Layout + 2nd Image KPIs) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Recent Line Inspection Logs -->
+        <div class="lg:col-span-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-teal-700">Recent Line Logs</h3>
+            <span class="text-[11px] text-slate-400">Latest Entries</span>
+          </div>
+          <div id="recent-logs-container" class="space-y-3">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Center Column: KPI Cards + Big Teal Donut Chart -->
+        <div class="lg:col-span-4 bg-white rounded-xl p-5 card-shadow flex flex-col justify-between">
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-slate-50 p-3 rounded-lg border-l-4 border-emerald-500">
+              <p class="text-[10px] font-bold text-slate-400 uppercase">Total Inspected</p>
+              <p id="kpi-inspected" class="text-xl font-extrabold text-slate-800 mt-0.5">0</p>
+              <p class="text-[10px] text-emerald-600 font-semibold mt-0.5">Pcs Checked</p>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-lg border-l-4 border-amber-500">
+              <p class="text-[10px] font-bold text-slate-400 uppercase">Average DHU %</p>
+              <p id="kpi-dhu" class="text-xl font-extrabold text-amber-600 mt-0.5">0.00%</p>
+              <p id="kpi-dhu-status" class="text-[10px] text-slate-500 font-semibold mt-0.5">Target &lt; 4.0%</p>
+            </div>
+          </div>
+
+          <div class="relative flex items-center justify-center my-2">
+            <div class="w-52 h-52">
+              <canvas id="passRateDonut"></canvas>
+            </div>
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span id="kpi-pass-rate" class="text-3xl font-extrabold text-teal-800">0%</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Overall Pass Rate</span>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-500 font-medium">Total Defects Found:</span>
+            <span id="kpi-defects" class="font-extrabold text-rose-600 bg-rose-50 px-2.5 py-1 rounded">0 Pcs</span>
+          </div>
+        </div>
+
+        <!-- Right Column: Top Defect Frequency Bars + Bottom Mini Cards -->
+        <div class="lg:col-span-4 flex flex-col justify-between space-y-4">
+          <div class="bg-white rounded-xl p-5 card-shadow flex-1">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-teal-700">Top Defect Frequency</h3>
+              <span class="text-[10px] bg-cyan-50 text-cyan-700 font-bold px-2 py-0.5 rounded">TOP ISSUES</span>
+            </div>
+            <div id="defect-bars-container" class="space-y-3.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white rounded-xl p-4 card-shadow border-b-4 border-cyan-500">
+              <p class="text-[10px] font-bold text-slate-400 uppercase">Passed Garments</p>
+              <p id="kpi-passed-qty" class="text-xl font-extrabold text-slate-800 mt-1">0</p>
+              <span class="inline-block w-8 h-1 bg-cyan-500 rounded mt-2"></span>
+            </div>
+            <div class="bg-white rounded-xl p-4 card-shadow border-b-4 border-teal-700">
+              <p class="text-[10px] font-bold text-slate-400 uppercase">Active Lines</p>
+              <p id="kpi-active-lines" class="text-xl font-extrabold text-slate-800 mt-1">0 LINES</p>
+              <span class="inline-block w-8 h-1 bg-teal-700 rounded mt-2"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Full-Width Line Chart (1st Image Style) -->
+      <section class="bg-white rounded-xl p-5 card-shadow">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-teal-700">Line-Wise DHU % & Quality Trend</h3>
+            <p class="text-[11px] text-slate-400">Comparing Defect Per Hundred Units (DHU%) across production lines</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="exportCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition">
+              Export CSV
+            </button>
+            <button onclick="switchTab('entries', document.querySelectorAll('.nav-btn')[1])" class="bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider transition">
+              View All Data
+            </button>
+          </div>
+        </div>
+        <div class="h-64 w-full">
+          <canvas id="lineDhuChart"></canvas>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- TAB 2: DAILY ENTRIES TABLE -->
+    <div id="tab-entries" class="hidden bg-white rounded-xl p-5 card-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-teal-800">Complete Google Sheet Records</h3>
+        <span id="table-count" class="text-xs font-semibold text-slate-500">0 Records</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-teal-900 text-white uppercase tracking-wider">
+              <th class="p-3 rounded-tl-lg">Date</th>
+              <th class="p-3">Line</th>
+              <th class="p-3">Buyer</th>
+              <th class="p-3">Style</th>
+              <th class="p-3">Check Qty</th>
+              <th class="p-3">Defects</th>
+              <th class="p-3">DHU %</th>
+              <th class="p-3">Top-1 Defect</th>
+              <th class="p-3 rounded-tr-lg">Process</th>
+            </tr>
+          </thead>
+          <tbody id="entries-table-body" class="divide-y divide-slate-100">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: DEFECT PARETO -->
+    <div id="tab-defects" class="hidden bg-white rounded-xl p-6 card-shadow">
+      <h3 class="text-sm font-bold uppercase tracking-wider text-teal-800 mb-1">Defect & Process Breakdown</h3>
+      <p class="text-xs text-slate-500 mb-6">Frequency of Top-1, Top-2, and Top-3 defects reported by QC inspectors</p>
+      <div class="h-80">
+        <canvas id="paretoBarChart"></canvas>
+      </div>
+    </div>
+
+    <!-- TAB 4: GOOGLE SHEET CONNECTION SETTINGS -->
+    <div id="tab-settings" class="hidden bg-white rounded-xl p-6 card-shadow max-w-2xl">
+      <h3 class="text-base font-bold text-teal-800 mb-2">Connect Your Live Google Sheet</h3>
+      <p class="text-xs text-slate-600 leading-relaxed mb-4">
+        আপনার Google Sheet থেকে অটোমেটিক ডেটা লোড করতে <b>File &gt; Share &gt; Publish to web</b> থেকে <b>CSV</b> লিংকটি কপি করে নিচে দিন অথবা সরাসরি <code>index.html</code> কোডের <code>GOOGLE_SHEET_CSV_URL</code> ভেরিয়েবলে বসিয়ে দিন।
+      </p>
+      <div class="space-y-3">
+        <input id="custom-sheet-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:border-teal-600" />
+        <div class="flex gap-3">
+          <button onclick="saveCustomSheetUrl()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-4 py-2.5 rounded-lg">Save & Sync Now</button>
+          <button onclick="clearCustomSheetUrl()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-lg">Use Demo Data</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // =========================================================================
+  // এখানে আপনার Google Sheet-এর Publish করা CSV লিংকটি পেস্ট করুন:
+  // =========================================================================
+  const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTPp0eVFG2uM2fPbRep9186y5r2JIykxrAuRM5NHEkVYr3dstQ3lgmaOZNP8DDFHOAZ1kmdBXk6Q7j-/pub?gid=0&single=true&output=csv
+";
+
+  // স্যাম্পল ডেটা (লিংক না দেওয়া পর্যন্ত আপনার শিটের ফরম্যাটে ডেটা দেখাবে)
+  const FALLBACK_DATA = [
+    { Date: "2026-11-08", Line: "1A", Buyer: "WALMART", Style: "GRS78015B", Color: "VIVID WHITE", "Check Qty": 1200, Defects: 49, "TOP-1": "PUCKERING", "PROCESS 1": "BOTTOM", "TOP-2": "UN-CUT THREAD", "TOP-3": "BAD TENSION", "DHU%": "4.08%", "QC ID": "QC01" },
+    { Date: "2026-11-08", Line: "1B", Buyer: "WALMART", Style: "AWS78060B", Color: "BLACK", "Check Qty": 929, Defects: 54, "TOP-1": "UP DOWN", "PROCESS 1": "IN SEAM", "TOP-2": "PUCKERING", "TOP-3": "BROKEN STITCH", "DHU%": "5.81%", "QC ID": "QC01" },
+    { Date: "2026-11-08", Line: "2", Buyer: "NEXT", Style: "927012", Color: "KHAKI", "Check Qty": 220, Defects: 12, "TOP-1": "PUCKERING", "PROCESS 1": "HOOD", "TOP-2": "PLEAT", "TOP-3": "BROKEN STITCH", "DHU%": "5.45%", "QC ID": "QC02" },
+    { Date: "2026-11-08", Line: "3", Buyer: "WALMART", Style: "AWS70564PD", Color: "BROWN", "Check Qty": 425, Defects: 23, "TOP-1": "MISSING", "PROCESS 1": "BARTACK", "TOP-2": "NDL MARK", "TOP-3": "OPEN SEAM", "DHU%": "5.41%", "QC ID": "QC03" },
+    { Date: "2026-11-08", Line: "4", Buyer: "MEIJER", Style: "49939", Color: "METEORITE", "Check Qty": 950, Defects: 20, "TOP-1": "SKIP STITCH", "PROCESS 1": "IN SEAM", "TOP-2": "PUCKERING", "TOP-3": "BARTACK MISSING", "DHU%": "2.11%", "QC ID": "QC04" },
+    { Date: "2026-11-08", Line: "5", Buyer: "NEXT", Style: "PUDDLE SUIT", Color: "NATURAL", "Check Qty": 650, Defects: 23, "TOP-1": "SHORT STITCH", "PROCESS 1": "ZIPPER JOINT", "TOP-2": "PUCKERING", "TOP-3": "OPEN SEAM", "DHU%": "3.54%", "QC ID": "QC05" },
+    { Date: "2026-11-08", Line: "6", Buyer: "ALPINE PRO", Style: "LJCH6AE", Color: "BLUE", "Check Qty": 120, Defects: 7, "TOP-1": "PUCKERING", "PROCESS 1": "HOOD", "TOP-2": "PLEAT", "TOP-3": "UN EVEN", "DHU%": "5.83%", "QC ID": "QC06" },
+    { Date: "2026-11-08", Line: "7", Buyer: "NEXT", Style: "D363369", Color: "COLOR BLOCK", "Check Qty": 480, Defects: 16, "TOP-1": "DOWN STITCH", "PROCESS 1": "LOOP", "TOP-2": "UN EVEN", "TOP-3": "BROKEN STITCH", "DHU%": "3.33%", "QC ID": "QC07" }
+  ];
+
+  let rawData = [];
+  let filteredData = [];
+  let donutChart = null;
+  let lineChart = null;
+  let paretoChart = null;
+
+  function getActiveCsvUrl() {
+    return localStorage.getItem("qms_sheet_csv_url") || GOOGLE_SHEET_CSV_URL;
+  }
+
+  function saveCustomSheetUrl() {
+    const val = document.getElementById("custom-sheet-url").value.trim();
+    if (val) {
+      localStorage.setItem("qms_sheet_csv_url", val);
+      loadData(true);
+      switchTab('dashboard', document.querySelectorAll('.nav-btn')[0]);
+    }
+  }
+
+  function clearCustomSheetUrl() {
+    localStorage.removeItem("qms_sheet_csv_url");
+    document.getElementById("custom-sheet-url").value = "";
+    loadData(true);
+  }
+
+  function loadData(forceRefresh = false) {
+    const csvUrl = getActiveCsvUrl();
+    document.getElementById("current-date-display").innerText = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
+
+    if (!csvUrl) {
+      document.getElementById("sync-badge").innerText = "DEMO DATA";
+      rawData = normalizeRows(FALLBACK_DATA);
+      populateFilters();
+      applyFilters();
+      return;
+    }
+
+    document.getElementById("sync-badge").innerText = "SYNCING...";
+    const cacheBuster = forceRefresh ? (csvUrl.includes("?") ? "&t=" : "?t=") + Date.now() : "";
+
+    Papa.parse(csvUrl + cacheBuster, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        if (results.data && results.data.length > 0) {
+          rawData = normalizeRows(results.data);
+          document.getElementById("sync-badge").innerText = "LIVE SYNCED";
+        } else {
+          rawData = normalizeRows(FALLBACK_DATA);
+          document.getElementById("sync-badge").innerText = "FALLBACK";
+        }
+        populateFilters();
+        applyFilters();
+      },
+      error: function() {
+        rawData = normalizeRows(FALLBACK_DATA);
+        document.getElementById("sync-badge").innerText = "OFFLINE DEMO";
+        populateFilters();
+        applyFilters();
+      }
+    });
+  }
+
+  function normalizeRows(rows) {
+    return rows.map(r => {
+      const clean = {};
+      Object.keys(r).forEach(k => clean[k.trim()] = typeof r[k] === 'string' ? r[k].trim() : r[k]);
+      const checkQty = parseFloat(String(clean["Check Qty"] || clean["CHECK QTY"] || 0).replace(/,/g, "")) || 0;
+      const defects = parseFloat(String(clean["Defects"] || clean["DEFFECTS"] || 0).replace(/,/g, "")) || 0;
+      const dhu = checkQty > 0 ? ((defects / checkQty) * 100) : 0;
+      return {
+        date: clean["Date"] || clean["Timestamp"] || "N/A",
+        line: String(clean["Line"] || clean["LINE"] || "N/A"),
+        buyer: String(clean["Buyer"] || clean["BUYER"] || "N/A"),
+        style: String(clean["Style"] || clean["STYLE"] || "N/A"),
+        checkQty,
+        defects,
+        dhu,
+        top1: clean["TOP-1"] || clean["TOP 01"] || "N/A",
+        process1: clean["PROCESS 1"] || clean["PROCESS NAME(1)"] || "N/A",
+        top2: clean["TOP-2"] || clean["TOP 02"] || "",
+        top3: clean["TOP-3"] || clean["TOP 03"] || ""
+      };
+    }).filter(item => item.checkQty > 0 || item.line !== "N/A");
+  }
+
+  function populateFilters() {
+    const lines = [...new Set(rawData.map(d => d.line))].sort();
+    const buyers = [...new Set(rawData.map(d => d.buyer))].sort();
+    const dates = [...new Set(rawData.map(d => d.date))].sort().reverse();
+
+    fillSelect("filter-line", lines, "All Lines");
+    fillSelect("filter-buyer", buyers, "All Buyers");
+    fillSelect("filter-date", dates, "All Dates");
+  }
+
+  function fillSelect(id, items, defaultLabel) {
+    const sel = document.getElementById(id);
+    const current = sel.value;
+    sel.innerHTML = `<option value="ALL">${defaultLabel}</option>`;
+    items.forEach(val => {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      sel.appendChild(opt);
+    });
+    if ([...sel.options].some(o => o.value === current)) sel.value = current;
+  }
+
+  function resetFilters() {
+    document.getElementById("filter-line").value = "ALL";
+    document.getElementById("filter-buyer").value = "ALL";
+    document.getElementById("filter-date").value = "ALL";
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const lineVal = document.getElementById("filter-line").value;
+    const buyerVal = document.getElementById("filter-buyer").value;
+    const dateVal = document.getElementById("filter-date").value;
+
+    filteredData = rawData.filter(d => {
+      return (lineVal === "ALL" || d.line === lineVal) &&
+             (buyerVal === "ALL" || d.buyer === buyerVal) &&
+             (dateVal === "ALL" || d.date === dateVal);
+    });
+
+    updateDashboard();
+  }
+
+  function updateDashboard() {
+    const totalChecked = filteredData.reduce((sum, d) => sum + d.checkQty, 0);
+    const totalDefects = filteredData.reduce((sum, d) => sum + d.defects, 0);
+    const passedQty = Math.max(0, totalChecked - totalDefects);
+    const avgDhu = totalChecked > 0 ? (totalDefects / totalChecked) * 100 : 0;
+    const passRate = totalChecked > 0 ? Math.max(0, 100 - avgDhu) : 0;
+    const activeLines = new Set(filteredData.map(d => d.line)).size;
+
+    // KPIs
+    document.getElementById("kpi-inspected").innerText = totalChecked.toLocaleString();
+    document.getElementById("kpi-dhu").innerText = avgDhu.toFixed(2) + "%";
+    document.getElementById("kpi-pass-rate").innerText = passRate.toFixed(1) + "%";
+    document.getElementById("kpi-defects").innerText = totalDefects.toLocaleString() + " Pcs";
+    document.getElementById("kpi-passed-qty").innerText = passedQty.toLocaleString();
+    document.getElementById("kpi-active-lines").innerText = activeLines + " LINES";
+
+    const dhuStatusEl = document.getElementById("kpi-dhu-status");
+    if (avgDhu <= 4.0) {
+      dhuStatusEl.innerText = "✓ Acceptable (< 4.0%)";
+      dhuStatusEl.className = "text-[10px] text-emerald-600 font-bold mt-0.5";
+    } else {
+      dhuStatusEl.innerText = "⚠ Action Required (> 4.0%)";
+      dhuStatusEl.className = "text-[10px] text-rose-600 font-bold mt-0.5";
+    }
+
+    // Recent Logs (Left Column - 1st Pic Style)
+    const logsContainer = document.getElementById("recent-logs-container");
+    logsContainer.innerHTML = "";
+    filteredData.slice(0, 4).forEach(row => {
+      const isHighDhu = row.dhu > 4.0;
+      const borderClass = isHighDhu ? "border-rose-500" : "border-teal-600";
+      const badgeClass = isHighDhu ? "bg-rose-100 text-rose-700" : "bg-cyan-100 text-teal-800";
+      logsContainer.innerHTML += `
+        <div class="bg-white rounded-xl p-4 card-shadow border-l-4 ${borderClass}">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-extrabold text-slate-800 uppercase">LINE ${row.line} • ${row.buyer}</h4>
+            <span class="text-[11px] font-bold ${isHighDhu ? 'text-rose-600' : 'text-teal-700'}">DHU: ${row.dhu.toFixed(2)}%</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">Style: <b>${row.style}</b> | Checked: ${row.checkQty} | Defects: ${row.defects}</p>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ${badgeClass}">${row.top1}</span>
+            <span class="text-[10px] text-slate-400 font-medium">${row.process1}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    // Top Defect Frequency Progress Bars (Right Column - 1st Pic Style)
+    const defectCounts = {};
+    filteredData.forEach(r => {
+      [r.top1, r.top2, r.top3].forEach(def => {
+        if (def && def !== "N/A") {
+          const key = def.toUpperCase();
+          defectCounts[key] = (defectCounts[key] || 0) + 1;
+        }
+      });
+    });
+    const sortedDefects = Object.entries(defectCounts).sort((a, b) => b[1] - a[1]);
+    const maxCount = sortedDefects.length > 0 ? sortedDefects[0][1] : 1;
+
+    const barsContainer = document.getElementById("defect-bars-container");
+    barsContainer.innerHTML = "";
+    sortedDefects.slice(0, 4).forEach(([name, count]) => {
+      const pct = Math.round((count / maxCount) * 100);
+      barsContainer.innerHTML += `
+        <div>
+          <div class="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
+            <span>${name}</span>
+            <span class="text-teal-700">${count}x</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+            <div class="bg-gradient-to-r from-teal-700 to-cyan-400 h-2.5 rounded-full" style="width: ${pct}%"></div>
+          </div>
+        </div>
+      `;
+    });
+
+    // Update Donut Chart
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(document.getElementById("passRateDonut"), {
+      type: "doughnut",
+      data: {
+        labels: ["Passed", "Defects"],
+        datasets: [{
+          data: [passRate, avgDhu],
+          backgroundColor: ["#06b6d4", "#005b66"],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        cutout: "74%",
+        plugins: { legend: { display: false } },
+        responsive: true,
+        maintainAspectRatio: true
+      }
+    });
+
+    // Update Bottom Line Chart (Line-wise DHU%)
+    const lineMap = {};
+    filteredData.forEach(r => {
+      if (!lineMap[r.line]) lineMap[r.line] = { checked: 0, defects: 0 };
+      lineMap[r.line].checked += r.checkQty;
+      lineMap[r.line].defects += r.defects;
+    });
+    const lineLabels = Object.keys(lineMap).map(l => "Line " + l);
+    const lineDhuValues = Object.values(lineMap).map(v => v.checked > 0 ? +( (v.defects / v.checked) * 100 ).toFixed(2) : 0);
+
+    if (lineChart) lineChart.destroy();
+    lineChart = new Chart(document.getElementById("lineDhuChart"), {
+      type: "line",
+      data: {
+        labels: lineLabels,
+        datasets: [{
+          label: "DHU %",
+          data: lineDhuValues,
+          borderColor: "#06b6d4",
+          backgroundColor: "rgba(6, 182, 212, 0.12)",
+          borderWidth: 3,
+          pointBackgroundColor: "#005b66",
+          pointRadius: 5,
+          tension: 0.25,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: "#f1f5f9" }, ticks: { callback: v => v + "%" } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Update Pareto Chart
+    if (paretoChart) paretoChart.destroy();
+    paretoChart = new Chart(document.getElementById("paretoBarChart"), {
+      type: "bar",
+      data: {
+        labels: sortedDefects.map(d => d[0]),
+        datasets: [{
+          label: "Occurrence Count",
+          data: sortedDefects.map(d => d[1]),
+          backgroundColor: "#007b8a",
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // Update Entries Table
+    document.getElementById("table-count").innerText = filteredData.length + " Records";
+    const tbody = document.getElementById("entries-table-body");
+    tbody.innerHTML = filteredData.map(r => `
+      <tr class="hover:bg-slate-50">
+        <td class="p-3 font-medium">${r.date}</td>
+        <td class="p-3 font-bold text-teal-800">${r.line}</td>
+        <td class="p-3">${r.buyer}</td>
+        <td class="p-3">${r.style}</td>
+        <td class="p-3 font-semibold">${r.checkQty}</td>
+        <td class="p-3 text-rose-600 font-bold">${r.defects}</td>
+        <td class="p-3 font-extrabold ${r.dhu > 4 ? 'text-rose-600' : 'text-emerald-600'}">${r.dhu.toFixed(2)}%</td>
+        <td class="p-3"><span class="bg-cyan-50 text-teal-800 px-2 py-0.5 rounded font-semibold">${r.top1}</span></td>
+        <td class="p-3 text-slate-500">${r.process1}</td>
+      </tr>
+    `).join("");
+  }
+
+  function switchTab(tabName, btnEl) {
+    ["dashboard", "entries", "defects", "settings"].forEach(t => {
+      document.getElementById("tab-" + t).classList.add("hidden");
+    });
+    document.getElementById("tab-" + tabName).classList.remove("hidden");
+
+    document.querySelectorAll(".nav-btn").forEach(b => {
+      b.classList.remove("teal-active", "text-white");
+      b.classList.add("text-teal-100/80");
+    });
+    if (btnEl) {
+      btnEl.classList.add("teal-active", "text-white");
+      btnEl.classList.remove("text-teal-100/80");
+    }
+  }
+
+  function toggleMobileMenu() {
+    document.getElementById("sidebar-nav").classList.toggle("hidden");
+  }
+
+  function exportCSV() {
+    const csv = Papa.unparse(filteredData);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "QMS_DHU_Report.csv";
+    link.click();
+  }
+
+  // Initial load & auto-refresh every 60 seconds
+  loadData();
+  setInterval(() => loadData(true), 60000);
+</script>
+</body>
+</html>
