@@ -237,15 +237,15 @@
 
     <!-- TAB 4: GOOGLE SHEET CONNECTION SETTINGS -->
     <div id="tab-settings" class="hidden bg-white rounded-xl p-6 card-shadow max-w-2xl">
-      <h3 class="text-base font-bold text-teal-800 mb-2">Connect Your Live Google Sheet</h3>
+      <h3 class="text-base font-bold text-teal-800 mb-2">Google Sheet Live Sync Connection</h3>
       <p class="text-xs text-slate-600 leading-relaxed mb-4">
-        আপনার Google Sheet থেকে অটোমেটিক ডেটা লোড করতে <b>File &gt; Share &gt; Publish to web</b> থেকে <b>CSV</b> লিংকটি কপি করে নিচে পেস্ট করুন।
+        আপনার Google Sheet-এর Publish করা CSV লিংকটি কোডের ভেতর সেট করা আছে। এটি পরিবর্তন করতে চাইলে নিচের বক্সে লিংক দিয়ে আপডেট করতে পারেন।
       </p>
       <div class="space-y-3">
         <input id="custom-sheet-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-xs focus:outline-none focus:border-teal-600" />
         <div class="flex gap-3">
           <button onclick="saveCustomSheetUrl()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-4 py-2.5 rounded-lg">Save & Sync Now</button>
-          <button onclick="clearCustomSheetUrl()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-lg">Use Demo Data</button>
+          <button onclick="clearCustomSheetUrl()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-lg">Reset to Default</button>
         </div>
       </div>
     </div>
@@ -254,7 +254,10 @@
 </div>
 
 <script>
-  const GOOGLE_SHEET_CSV_URL = "";
+  // =========================================================================
+  // আপনার Google Sheet-এর Publish করা CSV লিংকটি এখানে সরাসরি বসিয়ে দিন:
+  // =========================================================================
+  const GOOGLE_SHEET_CSV_URL = "আপনার_এখানে_পাবলিশড_সিভিভি_লিংকটি_বসান";
 
   const FALLBACK_DATA = [
     { Date: "2026-11-08", Line: "1A", Buyer: "WALMART", Style: "GRS78015B", Color: "VIVID WHITE", "Check Qty": 1200, Defects: 49, "TOP-1": "PUCKERING", "PROCESS 1": "BOTTOM", "TOP-2": "UN-CUT THREAD", "TOP-3": "BAD TENSION", "DHU%": "4.08%", "QC ID": "QC01" },
@@ -270,37 +273,47 @@
   let paretoChart = null;
 
   function getActiveCsvUrl() {
-    return localStorage.getItem("qms_sheet_csv_url") || GOOGLE_SHEET_CSV_URL;
+    const saved = localStorage.getItem("qms_sheet_csv_url");
+    if (saved && saved.trim() !== "" && saved.includes("http")) {
+      return saved;
+    }
+    return GOOGLE_SHEET_CSV_URL;
   }
 
   function saveCustomSheetUrl() {
-    const val = document.getElementById("custom-sheet-url").value.trim();
-    if (val) {
+    const inputEl = document.getElementById("custom-sheet-url");
+    const val = inputEl ? inputEl.value.trim() : "";
+    if (val && val.includes("http")) {
       localStorage.setItem("qms_sheet_csv_url", val);
       loadData(true);
       switchTab('dashboard', document.querySelectorAll('.nav-btn')[0]);
-      alert("Google Sheet URL saved successfully!");
+      alert("Google Sheet URL saved & synced successfully!");
+    } else {
+      alert("Please enter a valid Google Sheet CSV URL!");
     }
   }
 
   function clearCustomSheetUrl() {
     localStorage.removeItem("qms_sheet_csv_url");
-    document.getElementById("custom-sheet-url").value = "";
+    const inputEl = document.getElementById("custom-sheet-url");
+    if (inputEl) inputEl.value = GOOGLE_SHEET_CSV_URL;
     loadData(true);
-    alert("Switched back to demo data.");
+    alert("Reset to default URL.");
   }
 
   function loadData(forceRefresh = false) {
     const csvUrl = getActiveCsvUrl();
     document.getElementById("current-date-display").innerText = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
     
-    const savedUrl = localStorage.getItem("qms_sheet_csv_url");
-    if (savedUrl) document.getElementById("custom-sheet-url").value = savedUrl;
+    const inputEl = document.getElementById("custom-sheet-url");
+    if (inputEl && !inputEl.value) {
+      inputEl.value = csvUrl === GOOGLE_SHEET_CSV_URL ? "" : csvUrl;
+    }
 
-    if (!csvUrl) {
+    if (!csvUrl || csvUrl.includes("আপনার_এখানে")) {
       document.getElementById("sync-badge").innerText = "DEMO DATA";
       rawData = normalizeRows(FALLBACK_DATA);
-      populateFilters(true); // Default to ALL on first load
+      populateFilters(true);
       applyFilters();
       return;
     }
@@ -320,7 +333,7 @@
           rawData = normalizeRows(FALLBACK_DATA);
           document.getElementById("sync-badge").innerText = "FALLBACK";
         }
-        populateFilters(true); // Default to ALL on first load
+        populateFilters(true);
         applyFilters();
       },
       error: function() {
@@ -367,6 +380,7 @@
 
   function fillSelect(id, items, defaultLabel, setDefaultAll) {
     const sel = document.getElementById(id);
+    if (!sel) return;
     const current = setDefaultAll ? "ALL" : sel.value;
     sel.innerHTML = `<option value="ALL">${defaultLabel}</option>`;
     items.forEach(val => {
